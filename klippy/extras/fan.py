@@ -4,6 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 from . import pulse_counter
+import logging
 
 FAN_MIN_TIME = 0.100
 
@@ -12,6 +13,7 @@ class Fan:
         self.printer = config.get_printer()
         self.last_fan_value = 0.
         self.last_fan_time = 0.
+        self.flag = 0
         # Read config
         self.max_power = config.getfloat('max_power', 1., above=0., maxval=1.)
         self.kick_start_time = config.getfloat('kick_start_time', 0.1,
@@ -72,8 +74,25 @@ class Fan:
     def _handle_request_restart(self, print_time):
         self.set_speed(print_time, 0.)
 
+    def reCheck(self, eventtime):
+        tachometer_status = self.tachometer.get_status(eventtime)
+        rpm = tachometer_status['rpm']
+        if self.last_fan_value == 1.0 and rpm == 0.0:
+            logging.info("++Exception in Fan，invoke_shutdown\n")
+            self.printer.invoke_shutdown("Exception in Fan")
+
     def get_status(self, eventtime):
         tachometer_status = self.tachometer.get_status(eventtime)
+        rpm = tachometer_status['rpm']
+        if self.last_fan_value == 1.0 and rpm == 0.0:
+            if self.flag < 12:
+                self.flag += 1
+            else:
+                self.flag = 0
+                self.reCheck(eventtime)
+        else:
+            self.flag = 0
+        
         return {
             'speed': self.last_fan_value,
             'rpm': tachometer_status['rpm'],

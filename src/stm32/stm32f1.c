@@ -11,7 +11,9 @@
 #include "board/misc.h" // bootloader_request
 #include "internal.h" // enable_pclock
 #include "sched.h" // sched_main
-
+#include "ws2811.h"
+#include "UC1701.h"
+#include "stm32/gpio.h"
 
 /****************************************************************
  * Clock setup
@@ -260,6 +262,8 @@ bootloader_request(void)
 void
 armcm_main(void)
 {
+    gpio_peripheral(GPIO('A', 0), GPIO_OUTPUT, 0);
+    gpio_out_setup(GPIO('A', 0), 0);
     // Run SystemInit() and then restore VTOR
     SystemInit();
     SCB->VTOR = (uint32_t)VectorTable;
@@ -282,5 +286,13 @@ armcm_main(void)
         stm32f1_alternative_remap(AFIO_MAPR_SWJ_CFG_Msk,
                                   AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
 
+    gpio_peripheral(GPIO('A', 0), GPIO_OUTPUT, 0);
+    gpio_out_setup(GPIO('A', 0), 0);
+    // Main board fan start
+    gpio_peripheral(GPIO('A', 1), GPIO_OUTPUT, 0);
+    gpio_out_setup(GPIO('A', 1), 1);
+
+    lcd_init();
+    start_lcd();
     sched_main();
 }

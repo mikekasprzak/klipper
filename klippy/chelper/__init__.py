@@ -49,6 +49,8 @@ defs_stepcompress = """
         , uint64_t clock);
     int stepcompress_queue_msg(struct stepcompress *sc
         , uint32_t *data, int len);
+    int stepcompress_queue_mq_msg(struct stepcompress *sc, uint64_t req_clock
+        , uint32_t *data, int len);
     int stepcompress_extract_old(struct stepcompress *sc
         , struct pull_history_steps *p, int max
         , uint64_t start_clock, uint64_t end_clock);
@@ -273,13 +275,13 @@ def get_ffi():
         srcfiles = get_abs_files(srcdir, SOURCE_FILES)
         ofiles = get_abs_files(srcdir, OTHER_FILES)
         destlib = get_abs_files(srcdir, [DEST_LIB])[0]
-        if check_build_code(srcfiles+ofiles+[__file__], destlib):
-            if check_gcc_option(SSE_FLAGS):
-                cmd = "%s %s %s" % (GCC_CMD, SSE_FLAGS, COMPILE_ARGS)
-            else:
-                cmd = "%s %s" % (GCC_CMD, COMPILE_ARGS)
-            logging.info("Building C code module %s", DEST_LIB)
-            do_build_code(cmd % (destlib, ' '.join(srcfiles)))
+        # if check_build_code(srcfiles+ofiles+[__file__], destlib):
+        #     if check_gcc_option(SSE_FLAGS):
+        #         cmd = "%s %s %s" % (GCC_CMD, SSE_FLAGS, COMPILE_ARGS)
+        #     else:
+        #         cmd = "%s %s" % (GCC_CMD, COMPILE_ARGS)
+        #     logging.info("Building C code module %s", DEST_LIB)
+        #     do_build_code(cmd % (destlib, ' '.join(srcfiles)))
         FFI_main = cffi.FFI()
         for d in defs_all:
             FFI_main.cdef(d)

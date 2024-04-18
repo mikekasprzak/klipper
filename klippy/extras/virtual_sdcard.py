@@ -78,8 +78,7 @@ class VirtualSD:
                 filenames = os.listdir(self.sdcard_dirname)
                 return [(fname, os.path.getsize(os.path.join(dname, fname)))
                         for fname in sorted(filenames, key=str.lower)
-                        if not fname.startswith('.')
-                        and os.path.isfile((os.path.join(dname, fname)))]
+                        if os.path.isfile((os.path.join(dname, fname)))]
             except:
                 logging.exception("virtual_sdcard get_file_list")
                 raise self.gcode.error("Unable to get file list")
@@ -96,6 +95,7 @@ class VirtualSD:
             return self.current_file.name
         return None
     def progress(self):
+        # logging.info("+++++++file_position, file_size . %s : %s", self.file_position, self.file_size)
         if self.file_size:
             return float(self.file_position) / self.file_size
         else:
@@ -148,6 +148,7 @@ class VirtualSD:
         if filename[0] == '/':
             filename = filename[1:]
         self._load_file(gcmd, filename, check_subdirs=True)
+        self.printer.send_event("klippy:start_print")
         self.do_resume()
     def cmd_M20(self, gcmd):
         # List SD card
@@ -191,6 +192,9 @@ class VirtualSD:
         self.file_size = fsize
         self.print_stats.set_current_file(filename)
     def cmd_M24(self, gcmd):
+        if self.work_timer is not None:
+            raise self.gcode.error("SD busy")
+        self.printer.send_event("klippy:start_print")
         # Start/resume SD print
         self.do_resume()
     def cmd_M25(self, gcmd):
@@ -244,6 +248,7 @@ class VirtualSD:
                     self.current_file = None
                     logging.info("Finished SD card print")
                     self.gcode.respond_raw("Done printing file")
+                    self.file_position = self.file_size
                     break
                 lines = data.split('\n')
                 lines[0] = partial_input + lines[0]
